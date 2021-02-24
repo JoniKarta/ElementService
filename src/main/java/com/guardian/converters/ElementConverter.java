@@ -12,7 +12,7 @@ import com.guardian.data.ElementEntity;
 import com.guardian.data.ElementLocation;
 
 @Component
-public class EntityConverter {
+public class ElementConverter {
 
 	public ElementBoundary toBoundary(ElementEntity entity) {
 		return new ElementBoundary(entity.getId(), entity.getType(), entity.getIcon(), entity.getName(),
@@ -29,6 +29,22 @@ public class EntityConverter {
 				boundary.getElementAttribute());
 		entity.setCreatedTimestamp(new Date());
 		return entity;
+	}
+
+	public boolean toBoolean(String value) {
+		try {
+			return Boolean.parseBoolean(value);
+		} catch (IllegalArgumentException ex) {
+			throw new RuntimeException("Cannot convert from string to boolean");
+		}
+	}
+
+	public double toDouble(String value) {
+		try {
+			return Double.parseDouble(value);
+		} catch (IllegalArgumentException ex) {
+			throw new RuntimeException("Cannot convert from string to double");
+		}
 	}
 
 }

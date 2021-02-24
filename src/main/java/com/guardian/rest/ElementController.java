@@ -1,6 +1,9 @@
 package com.guardian.rest;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.guardian.boundaries.ElementBoundary;
 import com.guardian.service.ElementService;
+import com.guardian.utility.FilterTypes;
 
 @RestController
 public class ElementController {
@@ -37,30 +41,41 @@ public class ElementController {
 		return this.elementService.getSpecificElement(elementId);
 	}
 
+	@RequestMapping(path = "/elements/location", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ElementBoundary[] getAllElementByLocationFilters(@RequestParam(required = true) Map<String, String> attr,
+			@RequestParam(name = "sortBy", required = false, defaultValue = "createdTimestamp") String sortBy,
+			@RequestParam(name = "sortOrder", required = false, defaultValue = "DESC") String sortOrder,
+			@RequestParam(name = "page", required = false, defaultValue = "0") int page,
+			@RequestParam(name = "size", required = false, defaultValue = "10") int size) {
+		return this.elementService.getAllElementsByLocationFilters(attr, sortBy, sortOrder, page, size)
+				.toArray(new ElementBoundary[0]);
+	}
+
 	@RequestMapping(path = "/elements", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ElementBoundary[] getAllElementByFilters(
-			@RequestParam(name = "filterType", required = false, defaultValue = "") String type,
-			@RequestParam(name = "filterValue", required = false) String value,
+			@RequestParam(name = "type", required = false, defaultValue = "") String type,
+			@RequestParam(name = "value", required = false) String value,
 			@RequestParam(name = "sortBy", required = false, defaultValue = "createdTimestamp") String sortBy,
 			@RequestParam(name = "sortOrder", required = false, defaultValue = "DESC") String sortOrder,
 			@RequestParam(name = "page", required = false, defaultValue = "0") int page,
 			@RequestParam(name = "size", required = false, defaultValue = "10") int size) {
 
 		switch (type) {
-		case "PERIMETER":
-			return this.elementService.getAllElementsByPerimeter(value, sortBy, sortOrder, page, size)
+
+		case FilterTypes.BY_NAME:
+			return this.elementService.getAllElementsByName(value, sortBy, sortOrder, page, size)
 					.toArray(new ElementBoundary[0]);
-//		case RouteFilterType.BY_CREATED_TIMESTAMP:
-//			return this.packageTrackingService.getTracksByCreatedTimestamp(email, value, sortBy, sortOrder, page, size)
-//					.toArray(new TrackBoundary[0]);
-//		case RouteFilterType.BY_STATUS:
-//			return this.packageTrackingService.getTracksByStatus(email, value, sortBy, sortOrder, page, size)
-//					.toArray(new TrackBoundary[0]);
-//		default:
-//			return this.elementService.getAllElements(email, sortBy, sortOrder, page, size)
-//					.toArray(new ElementBoundary[0]);
-//		}
+
+		case FilterTypes.BY_TYPE:
+			return this.elementService.getAllElementsByTypes(value, sortBy, sortOrder, page, size)
+					.toArray(new ElementBoundary[0]);
 		}
-		return this.elementService.getAllElements(sortBy, sortOrder, page, size).toArray(new ElementBoundary[0]);
+		return this.elementService.getAllElements(value, sortBy, sortOrder, page, size).toArray(new ElementBoundary[0]);
 	}
+
+	@RequestMapping(path = "/elements", method = RequestMethod.DELETE)
+	public void deleteAll() {
+		this.elementService.deleteAll();
+	}
+
 }

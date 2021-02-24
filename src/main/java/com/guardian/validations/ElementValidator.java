@@ -19,11 +19,11 @@ public class ElementValidator {
 	public boolean validateElementActive(ElementBoundary element) {
 		return element.getActive() != null;
 	}
-	
+
 	public boolean validateElementLocation(ElementBoundary element) {
 		return element.getLocation() != null;
 	}
-	
+
 	public boolean validateElementAttr(ElementBoundary element) {
 		return element.getElementAttribute() != null;
 	}
@@ -31,4 +31,5 @@ public class ElementValidator {
 	public boolean isActive(ElementEntity elementEntity) {
 		return elementEntity != null && elementEntity.getActive() != null && elementEntity.getActive().booleanValue();
 	}
+
 }

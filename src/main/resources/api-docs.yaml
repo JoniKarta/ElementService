@@ -1,0 +1,202 @@
+openapi: 3.0.1
+info:
+  title: Element API
+  description: Where
+servers:
+- url: http://localhost:8087
+  description: Generated server url
+paths:
+  /elements/{elementId}:
+    get:
+      tags:
+      - element-controller
+      operationId: getElementBoundary
+      parameters:
+      - name: elementId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementBoundary'
+    put:
+      tags:
+      - element-controller
+      operationId: updateElement
+      parameters:
+      - name: elementId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementBoundary'
+        required: true
+      responses:
+        "200":
+          description: OK
+  /elements:
+    get:
+      tags:
+      - element-controller
+      operationId: getAllElementByFilters
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+          default: ""
+      - name: value
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: sortBy
+        in: query
+        required: false
+        schema:
+          type: string
+          default: createdTimestamp
+      - name: sortOrder
+        in: query
+        required: false
+        schema:
+          type: string
+          default: DESC
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ElementBoundary'
+    post:
+      tags:
+      - element-controller
+      operationId: createElementBoundary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElementBoundary'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElementBoundary'
+  /elements/location:
+    get:
+      tags:
+      - element-controller
+      operationId: getAllElementByLocationFilters
+      parameters:
+      - name: attr
+        in: query
+        required: true
+        schema:
+          type: object
+          additionalProperties:
+            type: string
+      - name: sortBy
+        in: query
+        required: false
+        schema:
+          type: string
+          default: createdTimestamp
+      - name: sortOrder
+        in: query
+        required: false
+        schema:
+          type: string
+          default: DESC
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ElementBoundary'
+components:
+  schemas:
+    Creator:
+      type: object
+      properties:
+        userEmail:
+          type: string
+    ElementBoundary:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        icon:
+          type: string
+        name:
+          type: string
+        active:
+          type: boolean
+        createdTimestamp:
+          type: string
+          format: date-time
+        createdBy:
+          $ref: '#/components/schemas/Creator'
+        location:
+          $ref: '#/components/schemas/Location'
+        elementAttribute:
+          type: object
+          additionalProperties:
+            type: object
+    Location:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double

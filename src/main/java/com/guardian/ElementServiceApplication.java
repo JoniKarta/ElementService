@@ -9,5 +9,4 @@ public class ElementServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ElementServiceApplication.class, args);
 	}
-
 }

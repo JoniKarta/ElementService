@@ -1,6 +1,7 @@
 package com.guardian.logic;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 
 import com.guardian.boundaries.ElementBoundary;
-import com.guardian.converters.EntityConverter;
+import com.guardian.converters.ElementConverter;
 import com.guardian.dal.ElementDao;
 import com.guardian.data.ElementEntity;
 import com.guardian.data.ElementLocation;
@@ -20,12 +21,12 @@ import com.guardian.validations.ElementValidator;
 @Service
 public class ElementServiceWithDB implements ElementService {
 	private ElementDao elementDao;
-	private EntityConverter entityConverter;
+	private ElementConverter elementConverter;
 	private ElementValidator validator;
 
 	@Autowired
-	public void setEntityConverter(EntityConverter entityConverter) {
-		this.entityConverter = entityConverter;
+	public void setEntityConverter(ElementConverter entityConverter) {
+		this.elementConverter = entityConverter;
 	}
 
 	@Autowired
@@ -40,7 +41,7 @@ public class ElementServiceWithDB implements ElementService {
 
 	@Override
 	public ElementBoundary create(ElementBoundary boundary) {
-		return this.entityConverter.toBoundary(this.elementDao.save(this.entityConverter.toEntity(boundary)));
+		return this.elementConverter.toBoundary(this.elementDao.save(this.elementConverter.toEntity(boundary)));
 	}
 
 	@Override
@@ -71,31 +72,51 @@ public class ElementServiceWithDB implements ElementService {
 
 	@Override
 	public ElementBoundary getSpecificElement(String elementId) {
-		return this.entityConverter.toBoundary(this.elementDao.findById(elementId)
+		return this.elementConverter.toBoundary(this.elementDao.findById(elementId)
 				.orElseThrow(() -> new ElementNotFoundException("Cannot found element with id: " + elementId)));
 	}
 
 	@Override
-	public List<ElementBoundary> getAllElements(String sortBy, String sortOrder, int page, int size) {
+	public List<ElementBoundary> getAllElementsByLocationFilters(Map<String, String> attr, String sortBy,
+			String sortOrder, int page, int size) {
+
 		Direction direction = sortOrder.equals(Direction.ASC.toString()) ? Direction.ASC : Direction.DESC;
-		return this.elementDao.findAll(PageRequest.of(page, size, direction, sortBy)).stream()
-				.map(this.entityConverter::toBoundary).collect(Collectors.toList());
+		return elementDao
+				.findAllByActiveAndLocation_latBetweenAndLocation_lngBetween(
+						elementConverter.toBoolean(attr.get("active")), elementConverter.toDouble(attr.get("minLat")),
+						elementConverter.toDouble(attr.get("maxLat")), elementConverter.toDouble(attr.get("minLng")),
+						elementConverter.toDouble(attr.get("maxLng")), PageRequest.of(page, size, direction, sortBy))
+				.stream().map(this.elementConverter::toBoundary).collect(Collectors.toList());
+
 	}
 
 	@Override
-	public List<ElementBoundary> getAllElementsByPerimeter(String value, String sortBy, String sortOrder, int page,
+	public List<ElementBoundary> getAllElements(String value, String sortBy, String sortOrder, int page, int size) {
+		Direction direction = sortOrder.equals(Direction.ASC.toString()) ? Direction.ASC : Direction.DESC;
+		return this.elementDao.findAll(PageRequest.of(page, size, direction, sortBy)).stream()
+				.map(this.elementConverter::toBoundary).collect(Collectors.toList());
+	}
+
+	@Override
+	public List<ElementBoundary> getAllElementsByName(String value, String sortBy, String sortOrder, int page,
 			int size) {
-//		
-//			return elementDao
-//			.findAllByActiveAndLocation_latBetweenAndLocation_lngBetween(true,
-//					(Double) action.getActionAttributes().get("minLat"),
-//					(Double) action.getActionAttributes().get("maxLat"),
-//					(Double) action.getActionAttributes().get("minLng"),
-//					(Double) action.getActionAttributes().get("maxLng"))
-//			.stream().map(this.elementConverter::convertFromEntity)
-//			.collect(Collectors.toList());
-		
-		return null;
+		Direction direction = sortOrder.equals(Direction.ASC.toString()) ? Direction.ASC : Direction.DESC;
+		return this.elementDao.findAllByName(value, PageRequest.of(page, size, direction, sortBy)).stream()
+				.map(this.elementConverter::toBoundary).collect(Collectors.toList());
+
+	}
+
+	@Override
+	public List<ElementBoundary> getAllElementsByTypes(String value, String sortBy, String sortOrder, int page,
+			int size) {
+		Direction direction = sortOrder.equals(Direction.ASC.toString()) ? Direction.ASC : Direction.DESC;
+		return this.elementDao.findAllByType(value, PageRequest.of(page, size, direction, sortBy)).stream()
+				.map(this.elementConverter::toBoundary).collect(Collectors.toList());
+	}
+	
+	@Override
+	public void deleteAll() {
+		this.elementDao.deleteAll();
 	}
 
 }
