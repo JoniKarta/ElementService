@@ -105,4 +105,12 @@ public class ElementBoundary {
 		this.elementAttribute = elementAttribute;
 	}
 
+	@Override
+	public String toString() {
+		return "ElementBoundary [id=" + id + ", type=" + type + ", icon=" + icon + ", name=" + name + ", active="
+				+ active + ", createdTimestamp=" + createdTimestamp + ", createdBy=" + createdBy + ", location="
+				+ location + ", elementAttribute=" + elementAttribute + "]";
+	}
+	
+
 }

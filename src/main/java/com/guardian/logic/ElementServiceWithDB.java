@@ -15,6 +15,7 @@ import com.guardian.dal.ElementDao;
 import com.guardian.data.ElementEntity;
 import com.guardian.data.ElementLocation;
 import com.guardian.exceptions.ElementNotFoundException;
+import com.guardian.exceptions.ExcessiveReportsException;
 import com.guardian.service.ElementService;
 import com.guardian.validations.ElementValidator;
 
@@ -41,7 +42,40 @@ public class ElementServiceWithDB implements ElementService {
 
 	@Override
 	public ElementBoundary create(ElementBoundary boundary) {
-		return this.elementConverter.toBoundary(this.elementDao.save(this.elementConverter.toEntity(boundary)));
+
+		// Get elements in range of approx. 500M of the element
+		List<ElementEntity> elementsInRange = this.elementDao.findAllByTypeAndLocation_latBetweenAndLocation_lngBetween(
+				boundary.getType(), boundary.getLocation().getLat() - 0.000500,
+				boundary.getLocation().getLat() + 0.000500, boundary.getLocation().getLng() - 0.000500,
+				boundary.getLocation().getLng() + 0.000500);
+
+		if (elementsInRange.isEmpty()) {
+			boundary.setActive(false);
+			boundary.getElementAttribute().put("threshold", 1);
+			return this.elementConverter.toBoundary(this.elementDao.save(this.elementConverter.toEntity(boundary)));
+		}
+
+		ElementEntity closestElement = elementsInRange.get(0);
+		String userEmail = boundary.getCreatedBy().getUserEmail().replaceAll("\\.", "_");
+
+		// Check if user who reports is not the one who created && user who reports did
+		// not report on the same report already
+		if (!closestElement.getCreatedBy().getUserEmail().equalsIgnoreCase(boundary.getCreatedBy().getUserEmail())
+				&& !closestElement.getElementAttribute().containsKey(userEmail)) {
+			int currentThreshold = (int) closestElement.getElementAttribute().get("threshold") + 1;
+
+			closestElement.getElementAttribute().put("threshold", currentThreshold);
+			closestElement.getElementAttribute().put(userEmail, "");
+
+			if (currentThreshold >= 3)
+				closestElement.setActive(true);
+
+			ElementBoundary closeElementBoundary = this.elementConverter.toBoundary(closestElement);
+			update(closestElement.getId(), closeElementBoundary);
+			return closeElementBoundary;
+		} else {
+			throw new ExcessiveReportsException("Cannot report twice");
+		}
 	}
 
 	@Override
@@ -87,7 +121,6 @@ public class ElementServiceWithDB implements ElementService {
 						elementConverter.toDouble(attr.get("maxLat")), elementConverter.toDouble(attr.get("minLng")),
 						elementConverter.toDouble(attr.get("maxLng")), PageRequest.of(page, size, direction, sortBy))
 				.stream().map(this.elementConverter::toBoundary).collect(Collectors.toList());
-
 	}
 
 	@Override
@@ -113,7 +146,7 @@ public class ElementServiceWithDB implements ElementService {
 		return this.elementDao.findAllByType(value, PageRequest.of(page, size, direction, sortBy)).stream()
 				.map(this.elementConverter::toBoundary).collect(Collectors.toList());
 	}
-	
+
 	@Override
 	public void deleteAll() {
 		this.elementDao.deleteAll();

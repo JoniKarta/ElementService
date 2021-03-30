@@ -41,7 +41,8 @@ public class ElementController {
 	}
 
 	@RequestMapping(path = "/elements/location", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-	public ElementBoundary[] getAllElementByLocationFilters(@RequestParam(required = true) Map<String, String> attr,
+	public ElementBoundary[] getAllElementByLocationFilters(
+			@RequestParam(required = true) Map<String, String> attr,
 			@RequestParam(name = "sortBy", required = false, defaultValue = "createdTimestamp") String sortBy,
 			@RequestParam(name = "sortOrder", required = false, defaultValue = "DESC") String sortOrder,
 			@RequestParam(name = "page", required = false, defaultValue = "0") int page,
