@@ -117,7 +117,7 @@ public class ElementServiceWithDB implements ElementService {
 		Direction direction = sortOrder.equals(Direction.ASC.toString()) ? Direction.ASC : Direction.DESC;
 		return elementDao
 				.findAllByActiveAndLocation_latBetweenAndLocation_lngBetween(
-						elementConverter.toBoolean(attr.get("active")), elementConverter.toDouble(attr.get("minLat")),
+						true, elementConverter.toDouble(attr.get("minLat")),
 						elementConverter.toDouble(attr.get("maxLat")), elementConverter.toDouble(attr.get("minLng")),
 						elementConverter.toDouble(attr.get("maxLng")), PageRequest.of(page, size, direction, sortBy))
 				.stream().map(this.elementConverter::toBoundary).collect(Collectors.toList());
