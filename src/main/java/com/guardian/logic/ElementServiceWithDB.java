@@ -43,38 +43,44 @@ public class ElementServiceWithDB implements ElementService {
 
 	@Override
 	public ElementBoundary create(ElementBoundary boundary) {
-
+		String userEmail = boundary.getCreatedBy().getUserEmail().replaceAll("\\.", "_");
 		// Get elements in range of approx. 500M of the element
 		List<ElementEntity> elementsInRange = this.elementDao.findAllByTypeAndLocation_latBetweenAndLocation_lngBetween(
 				boundary.getType(), boundary.getLocation().getLat() - 0.000500,
 				boundary.getLocation().getLat() + 0.000500, boundary.getLocation().getLng() - 0.000500,
 				boundary.getLocation().getLng() + 0.000500);
-
+		
 		// If there is not element in that range
 		if (elementsInRange.isEmpty()) {
 			// setActive indicate that this element will not displayed in the client side
 			boundary.setActive(false);
-
 			boundary.getElementAttribute().put("threshold", 1);
-			boundary.getElementAttribute().put(boundary.getCreatedBy().getUserEmail().replaceAll("\\.", "_"), 1);
+			boundary.getElementAttribute().put(userEmail, 1);
 			return this.elementConverter.toBoundary(this.elementDao.save(this.elementConverter.toEntity(boundary)));
 		}
 
 		ElementEntity closestElement = elementsInRange.get(0);
-		String userEmail = boundary.getCreatedBy().getUserEmail().replaceAll("\\.", "_");
-
+		// If the element was already created by some user and the threshold decrement so that it's not active anymore 
+		// then the user is exists his reporter count should be 0
+		if (closestElement.getElementAttribute().containsKey(userEmail)) {
+			int reporterCount = (int) closestElement.getElementAttribute().get(userEmail);
+			if (reporterCount == 0) {
+				int currentThreshold = (int) closestElement.getElementAttribute().get("threshold") + 1;
+				closestElement.getElementAttribute().put(userEmail, 1);
+				closestElement.getElementAttribute().put("threshold", currentThreshold);
+				ElementBoundary closeElementBoundary = this.elementConverter.toBoundary(closestElement);
+				update(closestElement.getId(), closeElementBoundary);
+				return closeElementBoundary;
+			}
+		}
+		
 		// Check if user who reports is not the one who created && user who reports did
 		// not report on the same report already
 		if (!closestElement.getCreatedBy().getUserEmail().equalsIgnoreCase(boundary.getCreatedBy().getUserEmail())
 				&& !closestElement.getElementAttribute().containsKey(userEmail)) {
 			int currentThreshold = (int) closestElement.getElementAttribute().get("threshold") + 1;
-
 			closestElement.getElementAttribute().put("threshold", currentThreshold);
 			closestElement.getElementAttribute().put(userEmail, 1);
-
-			if (currentThreshold > THRESHOLD)
-				closestElement.setActive(true);
-
 			ElementBoundary closeElementBoundary = this.elementConverter.toBoundary(closestElement);
 			update(closestElement.getId(), closeElementBoundary);
 			return closeElementBoundary;
@@ -107,8 +113,10 @@ public class ElementServiceWithDB implements ElementService {
 			existing.setElementAttribute(update.getElementAttribute());
 			if ((int) update.getElementAttribute().get("threshold") > THRESHOLD) {
 				existing.setActive(true);
+				System.err.println("Set Active to True");
 			} else {
 				existing.setActive(false);
+				System.err.println("Set Active to True");
 			}
 		}
 		this.elementDao.save(existing);
