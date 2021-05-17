@@ -24,6 +24,7 @@ public class ElementServiceWithDB implements ElementService {
 	private ElementDao elementDao;
 	private ElementConverter elementConverter;
 	private ElementValidator validator;
+	private static final int THRESHOLD = 1;
 
 	@Autowired
 	public void setEntityConverter(ElementConverter entityConverter) {
@@ -49,9 +50,13 @@ public class ElementServiceWithDB implements ElementService {
 				boundary.getLocation().getLat() + 0.000500, boundary.getLocation().getLng() - 0.000500,
 				boundary.getLocation().getLng() + 0.000500);
 
+		// If there is not element in that range
 		if (elementsInRange.isEmpty()) {
+			// setActive indicate that this element will not displayed in the client side
 			boundary.setActive(false);
+
 			boundary.getElementAttribute().put("threshold", 1);
+			boundary.getElementAttribute().put(boundary.getCreatedBy().getUserEmail().replaceAll("\\.", "_"), 1);
 			return this.elementConverter.toBoundary(this.elementDao.save(this.elementConverter.toEntity(boundary)));
 		}
 
@@ -65,9 +70,9 @@ public class ElementServiceWithDB implements ElementService {
 			int currentThreshold = (int) closestElement.getElementAttribute().get("threshold") + 1;
 
 			closestElement.getElementAttribute().put("threshold", currentThreshold);
-			closestElement.getElementAttribute().put(userEmail, "");
+			closestElement.getElementAttribute().put(userEmail, 1);
 
-			if (currentThreshold >= 3)
+			if (currentThreshold > THRESHOLD)
 				closestElement.setActive(true);
 
 			ElementBoundary closeElementBoundary = this.elementConverter.toBoundary(closestElement);
@@ -78,7 +83,7 @@ public class ElementServiceWithDB implements ElementService {
 		}
 	}
 
-	//@Todo fix update of threshold (one user cannot like/dislike twice)
+	// @Todo fix update of threshold (one user cannot like/dislike twice)
 	@Override
 	public void update(String elementId, ElementBoundary update) {
 		ElementEntity existing = this.elementDao.findById(elementId)
@@ -98,11 +103,14 @@ public class ElementServiceWithDB implements ElementService {
 		if (this.validator.validateElementLocation(update)) {
 			existing.setLocation(new ElementLocation(update.getLocation().getLat(), update.getLocation().getLng()));
 		}
-		if (this.validator.validateElementAttr(update) && !update.getElementAttribute()
-				.containsKey(update.getElementAttribute().get("reporter"))) {
+		if (this.validator.validateElementAttr(update)) {
 			existing.setElementAttribute(update.getElementAttribute());
+			if ((int) update.getElementAttribute().get("threshold") > THRESHOLD) {
+				existing.setActive(true);
+			} else {
+				existing.setActive(false);
+			}
 		}
-
 		this.elementDao.save(existing);
 	}
 
@@ -118,11 +126,12 @@ public class ElementServiceWithDB implements ElementService {
 
 		Direction direction = sortOrder.equals(Direction.ASC.toString()) ? Direction.ASC : Direction.DESC;
 		return elementDao
-				.findAllByActiveAndLocation_latBetweenAndLocation_lngBetween(
-						true, elementConverter.toDouble(attr.get("minLat")),
-						elementConverter.toDouble(attr.get("maxLat")), elementConverter.toDouble(attr.get("minLng")),
-						elementConverter.toDouble(attr.get("maxLng")), PageRequest.of(page, size, direction, sortBy))
-				.stream().map(this.elementConverter::toBoundary).collect(Collectors.toList());
+				.findAllByActiveAndLocation_latBetweenAndLocation_lngBetween(true,
+						elementConverter.toDouble(attr.get("minLat")), elementConverter.toDouble(attr.get("maxLat")),
+						elementConverter.toDouble(attr.get("minLng")), elementConverter.toDouble(attr.get("maxLng")),
+						PageRequest.of(page, size, direction, sortBy))
+				.stream().map(this.elementConverter::toBoundary)
+				.collect(Collectors.toList());
 	}
 
 	@Override
