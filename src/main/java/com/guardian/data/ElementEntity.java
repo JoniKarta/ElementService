@@ -21,7 +21,7 @@ public class ElementEntity {
 	private Map<String, Object> elementAttribute;
 
 	public ElementEntity() {
-		// TODO Auto-generated constructor stub
+		
 	}
 
 	// There are two elements which got created using the database which are: id and
