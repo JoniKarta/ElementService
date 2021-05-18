@@ -89,7 +89,6 @@ public class ElementServiceWithDB implements ElementService {
 		}
 	}
 
-	// @Todo fix update of threshold (one user cannot like/dislike twice)
 	@Override
 	public void update(String elementId, ElementBoundary update) {
 		ElementEntity existing = this.elementDao.findById(elementId)
@@ -111,12 +110,10 @@ public class ElementServiceWithDB implements ElementService {
 		}
 		if (this.validator.validateElementAttr(update)) {
 			existing.setElementAttribute(update.getElementAttribute());
-			if ((int) update.getElementAttribute().get("threshold") > THRESHOLD) {
+			if ((int) existing.getElementAttribute().get("threshold") > THRESHOLD) {
 				existing.setActive(true);
-				System.err.println("Set Active to True");
 			} else {
 				existing.setActive(false);
-				System.err.println("Set Active to True");
 			}
 		}
 		this.elementDao.save(existing);
